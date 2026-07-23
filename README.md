@@ -20,6 +20,24 @@ stdio only).
 node dist/cli.js            # stdio MCP server (no --api-key at startup; keys are per-tool-call)
 ```
 
+## Prerequisite — an agent `walletId`
+
+`x402_pay` pays from a CryptoAPIs **agent wallet** (`walletId`). Create one ONCE per blockchain+network
+before paying — a single `POST` to the buyer API returns the id (non-custodial: you register only your
+PUBLIC address):
+
+```bash
+curl -X POST https://ai.cryptoapis.io/x402/buyer/wallets \
+  -H "x-api-key: $CRYPTOAPIS_API_KEY" -H "content-type: application/json" \
+  -d '{"blockchain":"base","network":"eip155:8453","address":"0xYourAddress"}'
+# → { "walletId": "…" }
+```
+
+`network` MUST be the **CAIP-2 id** (`eip155:8453`, `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`, …), not a
+bare name — and exactly one of `address` (any chain; **required for Solana/Kaspa**) or `xpub`
+(xpub-capable chains). A malformed body returns a clear `400 malformed_request`. Set the returned id as
+`X402_WALLET_ID` (or pass `walletId`).
+
 ## Tool: `x402_pay`
 
 | Input | Required | Description |
