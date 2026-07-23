@@ -44,7 +44,7 @@ bare name — and exactly one of `address` (any chain; **required for Solana/Kas
 |---|---|---|
 | `url` | ✓ | the (possibly paywalled) resource |
 | `apiKey` | ✓ | your CryptoAPIs key (X402_BUYER feature) — only used to call the buyer `/authorize` |
-| `walletId` | ✓ | the agent wallet the buyer service pays from |
+| `walletId` | ✓ | the **wallet record id** from `POST /wallets` (a registry `_id`) — **NOT the on-chain address** (an address gets `wallet_not_found`) |
 | `privateKey` | ✓ | the wallet's EVM key — **signs locally, never sent anywhere** |
 | `method`/`body`/`headers` | | the request to make |
 | `allowedNetworks` | | restrict which CAIP-2 networks to pay on |

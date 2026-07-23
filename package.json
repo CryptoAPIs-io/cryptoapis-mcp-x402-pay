@@ -1,7 +1,7 @@
 {
   "name": "@cryptoapis-io/mcp-x402-pay",
   "mcpName": "io.github.CryptoAPIs-io/mcp-x402-pay",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server that pays x402-gated HTTP endpoints — one x402_pay tool that fetches, and on a 402 authorizes via the CryptoAPIs buyer service, signs LOCALLY, and retries.",
   "license": "MIT",
   "type": "module",

@@ -18,7 +18,7 @@ export const X402PaySchema = z.object({
     headers: z.record(z.string(), z.string()).optional().describe("Extra request headers"),
 
     apiKey: z.string().optional().describe("Your CryptoAPIs API key with the X402_BUYER feature (used only to call the buyer /authorize). Falls back to the CRYPTOAPIS_API_KEY env var — set it once and omit this."),
-    walletId: z.string().optional().describe("The CryptoAPIs agent wallet id to pay from. Falls back to the X402_WALLET_ID env var. Create one first (once per blockchain+network): POST https://ai.cryptoapis.io/x402/buyer/wallets with {blockchain, network (CAIP-2 id like eip155:8453 or solana:<genesisHash> — NOT a bare name), address (your public address; required for Solana/Kaspa)} → returns walletId."),
+    walletId: z.string().optional().describe("The CryptoAPIs buyer-service wallet RECORD ID (the id returned by POST /wallets) — NOT the on-chain address; passing an address returns wallet_not_found. Falls back to the X402_WALLET_ID env var. Create one first (once per blockchain+network): POST https://ai.cryptoapis.io/x402/buyer/wallets with {blockchain, network (CAIP-2 id like eip155:8453 or solana:<genesisHash> — NOT a bare name), address (your public address; required for Solana/Kaspa)} → returns walletId."),
 
     // Per-family signing keys — pass only the one(s) for the chain(s) you pay on.
     // All SIGN LOCALLY and are never sent anywhere; each falls back to its env var
