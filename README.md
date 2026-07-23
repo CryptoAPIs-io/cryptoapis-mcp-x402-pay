@@ -8,7 +8,11 @@ URL and, if the server returns `402 Payment Required`, it authorizes the payment
 service, **signs locally**, retries, and returns the paid response.
 
 **Non-custodial:** the private key is passed per request and never leaves the process (no HTTP server —
-stdio only). v1 supports the EVM `eip712` scheme (e.g. Base USDC).
+stdio only).
+
+**Supported today:** EVM (`eip712`, e.g. Base USDC) and Solana. Tron, Bitcoin/UTXO, XRP and Kaspa are
+**upcoming** — wired but not yet enabled; paying on them returns a clear `family_not_yet_supported`
+("coming soon") result.
 
 ## Run
 

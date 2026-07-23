@@ -17,6 +17,12 @@ const X402_VERSION = 2;
  *  (eip712/…) is the ARTIFACT type (how to sign), NOT this. */
 const SCHEME_EXACT = "exact";
 
+/** Artifact schemes that are LIVE-VERIFIED end-to-end and enabled today. EVM (eip712) and
+ *  Solana (svm-transaction) are supported; Tron/UTXO/XRP/Kaspa are wired but not yet
+ *  live-verified, so they are gated OFF ("coming soon") until each is exercised in prod.
+ *  Enabling a family once verified = add its scheme here. */
+const SUPPORTED_SCHEMES = new Set(["eip712", "svm-transaction"]);
+
 /** UTXO CAIP-2 network id → the {blockchain, network} the mcp-signer utxo-sign needs
  *  (a bare CAIP-2 doesn't carry the chain name). Only UTXO signing needs this pair. */
 const UTXO_CAIP2: Record<string, { blockchain: string; network: string }> = {
@@ -123,6 +129,18 @@ export async function x402Pay(input: X402PayInput): Promise<{
     //    per-family value the facilitator expects (SVM base64, UTXO/XRP hex, Kaspa JSON,
     //    Tron the structured {txID, raw_data_hex, raw_data, signature[]} object).
     const network = requirements.network;
+
+    // Gate off families that are wired but not yet live-verified (Tron/UTXO/XRP/Kaspa).
+    // EVM + Solana are supported today; the rest are on the roadmap ("coming soon").
+    if (!auth.scheme || !SUPPORTED_SCHEMES.has(auth.scheme)) {
+        return {
+            status: 402,
+            paid: false,
+            reason: `family_not_yet_supported: the "${auth.scheme}" family is coming soon — only EVM (eip712) and Solana (svm-transaction) are supported today`,
+            body: "",
+        };
+    }
+
     const sp = auth.signingPayload ?? {};
     let payload: Record<string, unknown>;
 
@@ -222,7 +240,7 @@ export async function x402Pay(input: X402PayInput): Promise<{
 export const x402PayTool: McpX402ToolDef<typeof X402PaySchema> = {
     name: "x402_pay",
     description:
-        "Fetch an HTTP resource and, if it returns 402 Payment Required, pay it automatically with x402 and return the paid response. On a 402 it: parses the merchant's price, authorizes via the CryptoAPIs buyer /authorize, signs the payment LOCALLY (non-custodial — the key never leaves this process), and retries with the X-PAYMENT header. Returns { status, paid, body, settlement? }. Supports all six x402 families: EVM (eip712, e.g. Base USDC), Solana, Tron, UTXO (bitcoin/ltc/doge/dash/bch/zcash), Kaspa, XRP. Each family signs with its own key form — set CRYPTOAPIS_API_KEY + X402_WALLET_ID once, plus the signing key(s) for the chain(s) you pay on: X402_PRIVATE_KEY (EVM+Tron hex), X402_SVM_SECRET (base58), X402_UTXO_WIF, X402_KASPA_KEY (hex), X402_XRP_SEED. A scheme with no configured key errors cleanly (never mis-signs). Env vars keep keys OUT of tool-call logs. Use allowedNetworks to restrict, maxAmount as a safety cap. SECURITY: use only in trusted local environments.",
+        "Fetch an HTTP resource and, if it returns 402 Payment Required, pay it automatically with x402 and return the paid response. On a 402 it: parses the merchant's price, authorizes via the CryptoAPIs buyer /authorize, signs the payment LOCALLY (non-custodial — the key never leaves this process), and retries with the X-PAYMENT header. Returns { status, paid, body, settlement? }. Supported today: EVM (eip712, e.g. Base USDC) and Solana. Tron, UTXO (bitcoin/ltc/doge/dash/bch/zcash), Kaspa and XRP are UPCOMING — wired but not yet enabled, and paying on them returns a clear coming-soon (family_not_yet_supported) result. Set CRYPTOAPIS_API_KEY + X402_WALLET_ID once, plus the signing key(s) for the chain(s) you pay on: X402_PRIVATE_KEY (EVM hex), X402_SVM_SECRET (base58). A scheme with no configured key errors cleanly (never mis-signs). Env vars keep keys OUT of tool-call logs. Use allowedNetworks to restrict, maxAmount as a safety cap. SECURITY: use only in trusted local environments.",
     inputSchema: X402PaySchema,
     handler: async (input: X402PayInput) => {
         const result = await x402Pay(input);

@@ -73,9 +73,10 @@ async function run(): Promise<void> {
         results.push(`parseEnvelope(${env.family}) accepts x402Pay's ${s.fam} payload shape ✓`);
     }
 
-    // 2. Real dispatch for Tron (mcp-signer signs with elliptic — no external dep) →
-    //    confirms the tool authorizes, signs, builds the structured object, and pays.
-    const tronArtifact: Artifact = {
+    // 2. Upcoming families are GATED off ("coming soon") even with a key wired — the gate
+    //    fires before any signing. Tron/UTXO/XRP/Kaspa are wired but not yet live-verified.
+    const requirements = { scheme: "exact", network: "tron:0x2b6653dc", amount: "10000", asset: "native", payTo: "x", maxTimeoutSeconds: 300, extra: {} };
+    const gatedArtifact: Artifact = {
         scheme: "tron-transaction",
         signingPayload: {
             transaction: {
@@ -86,12 +87,14 @@ async function run(): Promise<void> {
             },
         },
     };
-    const requirements = { scheme: "exact", network: "tron:0x2b6653dc", amount: "10000", asset: "native", payTo: "x", maxTimeoutSeconds: 300, extra: {} };
-    const { base, close } = await startServer(tronArtifact, requirements);
+    const { base, close } = await startServer(gatedArtifact, requirements);
     try {
+        // key IS provided — the gate must still refuse (never reaches signing)
         const res = await x402Pay({ url: `${base}/premium`, apiKey: "k", walletId: "w", buyerBaseUrl: `${base}/x402/buyer`, tronKey: "aa".repeat(32) });
-        if (!res.paid) throw new Error(`tron dispatch: not paid — ${res.reason ?? res.status}`);
-        results.push("tron: full dispatch (authorize → sign → structured payload → pay) ✓");
+        if (res.paid || !/family_not_yet_supported/.test(res.reason ?? "")) {
+            throw new Error(`tron gate: expected family_not_yet_supported, got ${JSON.stringify(res)}`);
+        }
+        results.push("tron (upcoming): gated as coming-soon even with a key wired ✓");
     } finally {
         close();
     }

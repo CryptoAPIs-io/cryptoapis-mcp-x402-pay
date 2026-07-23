@@ -55,8 +55,9 @@ missing per-family key errors cleanly. Full per-family SIGNATURE recovery is cov
 `test-x402-nonevm-sign` and is the live prod-test.
 
 ## Status
-All six families wired (EVM/SVM/Tron/UTXO/Kaspa/XRP). Depends on `mcp-signer`'s per-family signers —
-including its **additive** Tron structured-output change (`tronSignFromDetails` now also returns
-`signedTransaction`). Registry metadata in `server.json` (`mcpName` matches). **NOT published —
-branch-only (`investigate/utxo-signer-per-chain`) until prod-tested**, like the signer changes it
-depends on. Live signature-recovery per family is the remaining prod-test step.
+All six families are WIRED, but only **EVM** (`eip712`) and **Solana** (`svm-transaction`) are ENABLED
+(live-verified end-to-end). Tron/UTXO/XRP/Kaspa are gated OFF via `SUPPORTED_SCHEMES` in
+`tools/x402-pay/index.ts` and return a clear `family_not_yet_supported` ("coming soon") result — enabling
+one once verified = add its scheme to that set. Depends on `@cryptoapis-io/mcp-signer`'s per-family
+signers — including its **additive** Tron structured-output change (`tronSignFromDetails` now also returns
+`signedTransaction`). Registry metadata in `server.json` (`mcpName` matches).
