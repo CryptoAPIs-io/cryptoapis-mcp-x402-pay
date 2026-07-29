@@ -31,6 +31,7 @@ export const X402PaySchema = z.object({
     xrpSeed: z.string().optional().describe("XRP secret/seed (base58, e.g. s...) — signs xrp-transaction payments. Falls back to X402_XRP_SEED."),
 
     allowedNetworks: z.array(z.string()).optional().describe("Restrict which CAIP-2 networks to pay on (e.g. [\"eip155:8453\"])"),
+    allowedHosts: z.array(z.string()).optional().describe("Restrict WHICH HOSTS may be paid, e.g. [\"api.acme.com\"] (a leading dot matches subdomains: \".acme.com\"). A url outside the list is refused BEFORE any network call. Falls back to the X402_ALLOWED_HOSTS env var (comma-separated) — set it there to pin the allowlist OUTSIDE the model's reach, so a prompt-injected url cannot widen it."),
     buyerBaseUrl: z.string().url().optional().describe("Override the buyer service base URL (default https://ai.cryptoapis.io/x402/buyer)"),
     maxAmount: z.string().optional().describe("Optional safety cap: refuse to pay if the required atomic-unit amount exceeds this"),
 });

@@ -61,6 +61,31 @@ function selectRequirements(accepts: PaymentRequirements[], allowed?: string[]):
  * @param input the tool input
  * @return the final (paid) response summary
  */
+/**
+ * Is `url` allowed by a host allowlist?
+ *
+ * An entry matches the host exactly; an entry with a LEADING DOT (`.acme.com`) also matches
+ * any subdomain. Matching is on the parsed hostname, never on substrings of the raw url —
+ * a substring test would let `evil.com/?x=api.acme.com` through.
+ *
+ * @param url the url about to be fetched
+ * @param allowed the allowlist (already resolved from param or env)
+ * @return true when the url may be paid
+ */
+export function isHostAllowed(url: string, allowed: string[]): boolean {
+    let host: string;
+    try {
+        host = new URL(url).hostname.toLowerCase();
+    } catch {
+        return false; // unparseable url is never allowed
+    }
+    return allowed.some((entry) => {
+        const e = entry.trim().toLowerCase();
+        if (!e) return false;
+        return e.startsWith(".") ? host === e.slice(1) || host.endsWith(e) : host === e;
+    });
+}
+
 export async function x402Pay(input: X402PayInput): Promise<{
     status: number; paid: boolean; body: string; settlement?: unknown; reason?: string;
 }> {
@@ -68,6 +93,22 @@ export async function x402Pay(input: X402PayInput): Promise<{
     // MCP config so the agent only ever passes `url` — and the key stays out of logs).
     // apiKey + walletId are always needed (to call /authorize); the SIGNING key is
     // resolved per-family at the dispatch below (each chain uses its own key form).
+    // Host allowlist FIRST — before credentials, before any fetch. This tool holds spending
+    // keys and will pay whatever url it is handed, so a url the operator never sanctioned
+    // must not even be contacted. Resolved from the param OR X402_ALLOWED_HOSTS so an
+    // operator can pin it outside the model's reach; unset = unrestricted (x402 is an open
+    // protocol and the tool must be able to pay any merchant, incl. our own customers).
+    const allowedHosts = input.allowedHosts
+        ?? (process.env.X402_ALLOWED_HOSTS ? process.env.X402_ALLOWED_HOSTS.split(",") : undefined);
+    if (allowedHosts && allowedHosts.length > 0 && !isHostAllowed(input.url, allowedHosts)) {
+        return {
+            status: 0,
+            paid: false,
+            reason: `host not allowed: ${input.url} is outside allowedHosts (${allowedHosts.join(", ")})`,
+            body: "",
+        };
+    }
+
     const apiKey = input.apiKey ?? process.env.CRYPTOAPIS_API_KEY;
     const walletId = input.walletId ?? process.env.X402_WALLET_ID;
     if (!apiKey || !walletId) {
@@ -240,7 +281,7 @@ export async function x402Pay(input: X402PayInput): Promise<{
 export const x402PayTool: McpX402ToolDef<typeof X402PaySchema> = {
     name: "x402_pay",
     description:
-        "Fetch an HTTP resource and, if it returns 402 Payment Required, pay it automatically with x402 and return the paid response. On a 402 it: parses the merchant's price, authorizes via the CryptoAPIs buyer /authorize, signs the payment LOCALLY (non-custodial — the key never leaves this process), and retries with the X-PAYMENT header. Returns { status, paid, body, settlement? }. Supported today: EVM (eip712, e.g. Base USDC) and Solana. Tron, UTXO (bitcoin/ltc/doge/dash/bch/zcash), Kaspa and XRP are UPCOMING — wired but not yet enabled, and paying on them returns a clear coming-soon (family_not_yet_supported) result. Set CRYPTOAPIS_API_KEY + X402_WALLET_ID once, plus the signing key(s) for the chain(s) you pay on: X402_PRIVATE_KEY (EVM hex), X402_SVM_SECRET (base58). A scheme with no configured key errors cleanly (never mis-signs). Env vars keep keys OUT of tool-call logs. Use allowedNetworks to restrict, maxAmount as a safety cap. SECURITY: use only in trusted local environments.",
+        "Fetch an HTTP resource and, if it returns 402 Payment Required, pay it automatically with x402 and return the paid response. On a 402 it: parses the merchant's price, authorizes via the CryptoAPIs buyer /authorize, signs the payment LOCALLY (non-custodial — the key never leaves this process), and retries with the X-PAYMENT header. Returns { status, paid, body, settlement? }. Supported today: EVM (eip712, e.g. Base USDC) and Solana. Tron, UTXO (bitcoin/ltc/doge/dash/bch/zcash), Kaspa and XRP are UPCOMING — wired but not yet enabled, and paying on them returns a clear coming-soon (family_not_yet_supported) result. Set CRYPTOAPIS_API_KEY + X402_WALLET_ID once, plus the signing key(s) for the chain(s) you pay on: X402_PRIVATE_KEY (EVM hex), X402_SVM_SECRET (base58). A scheme with no configured key errors cleanly (never mis-signs). Env vars keep keys OUT of tool-call logs. Use allowedNetworks to restrict chains, maxAmount as a per-call spend cap, and allowedHosts to restrict WHICH SITES may be paid (a url outside the list is refused before any network call; set X402_ALLOWED_HOSTS in the MCP config to pin it outside the model's reach). SECURITY: this tool holds spending keys — use only in trusted local environments, and prefer pinning allowedHosts + maxAmount via env for unattended runs.",
     inputSchema: X402PaySchema,
     handler: async (input: X402PayInput) => {
         const result = await x402Pay(input);

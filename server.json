@@ -6,12 +6,12 @@
     "url": "https://github.com/CryptoAPIs-io/cryptoapis-mcp-x402-pay",
     "source": "github"
   },
-  "version": "0.1.2",
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@cryptoapis-io/mcp-x402-pay",
-      "version": "0.1.2",
+      "version": "0.3.0",
       "transport": {
         "type": "stdio"
       }
