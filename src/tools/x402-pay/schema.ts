@@ -34,6 +34,8 @@ export const X402PaySchema = z.object({
     allowedHosts: z.array(z.string()).optional().describe("Restrict WHICH HOSTS may be paid, e.g. [\"api.acme.com\"] (a leading dot matches subdomains: \".acme.com\"). A url outside the list is refused BEFORE any network call. Falls back to the X402_ALLOWED_HOSTS env var (comma-separated) — set it there to pin the allowlist OUTSIDE the model's reach, so a prompt-injected url cannot widen it."),
     buyerBaseUrl: z.string().url().optional().describe("Override the buyer service base URL (default https://ai.cryptoapis.io/x402/buyer)"),
     maxAmount: z.string().optional().describe("Optional safety cap: refuse to pay if the required atomic-unit amount exceeds this"),
+
+    paymentId: z.string().min(16).max(128).optional().describe("Idempotency id for this payment (16-128 chars), sent as the x402 `payment-identifier` extension so the facilitator can collapse a retry into ONE settlement. Supply your own job/request id to make retries safe across process restarts. If omitted, a deterministic id is derived from the offer being paid (url + amount + asset + payTo + network + wallet), so retrying the SAME purchase settles once while a genuinely different purchase is unaffected."),
 });
 
 export type X402PayInput = z.infer<typeof X402PaySchema>;
