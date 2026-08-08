@@ -6,6 +6,8 @@ import {
     kaspaSignFromDetails,
     xrpSignFromDetails,
 } from "@cryptoapis-io/mcp-signer";
+import { createHash } from "node:crypto";
+
 import type { X402PayInput } from "./schema.js";
 import { X402PaySchema } from "./schema.js";
 import type { McpX402ToolDef } from "../types.js";
@@ -47,6 +49,39 @@ type PaymentRequirements = {
 };
 
 /** Pick which offered requirement to pay (allowlist-aware; else the first). */
+/**
+ * Derive a deterministic `payment-identifier` for an offer the caller did not
+ * name themselves.
+ *
+ * The tuple has to identify the PAYMENT, not just the request. Hashing only
+ * url + amount + wallet is not enough: two offers for the same resource at the
+ * same price from the same wallet, but with a different `payTo`, network or
+ * asset, are different payments, and collapsing them would silently return the
+ * first purchase's receipt for the second. That failure is worse than the
+ * double-settle it is meant to prevent, because a double settle is visible and
+ * refundable while a swallowed purchase looks like success.
+ *
+ * So every field of the accepted offer that distinguishes one payment from
+ * another is included. Retrying the SAME purchase collapses; a genuinely
+ * different purchase is untouched.
+ *
+ * `pay_` prefix + 64 hex chars = 68 characters, inside the spec's 16-128 bound.
+ */
+function derivePaymentId(
+    url: string,
+    req: PaymentRequirements,
+    walletId: string,
+): string {
+    const h = createHash("sha256");
+    // NUL-separated so that no combination of field values can be re-split into
+    // a different one ("ab" + "c" must not collide with "a" + "bc").
+    for (const part of [url, req.amount, req.asset, req.payTo, req.network, req.scheme, walletId]) {
+        h.update(String(part));
+        h.update("\0");
+    }
+    return `pay_${h.digest("hex")}`;
+}
+
 function selectRequirements(accepts: PaymentRequirements[], allowed?: string[]): PaymentRequirements | null {
     if (accepts.length === 0) return null;
     if (Array.isArray(allowed) && allowed.length > 0) {
@@ -256,11 +291,19 @@ export async function x402Pay(input: X402PayInput): Promise<{
         return { status: 402, paid: false, reason: `unsupported_scheme: ${auth.scheme}`, body: "" };
     }
 
+    // `payment-identifier` (x402 extension). The buyer SDK already documents
+    // this id as "the facilitator's idempotency key, so the CALLER controls
+    // dedup" -- but this tool never sent one, so an agent driving the MCP
+    // server had no way to make a retry safe. Without it the facilitator falls
+    // back to the authorization nonce, which a re-run of this flow re-mints.
+    const paymentId = input.paymentId ?? derivePaymentId(input.url, requirements, walletId);
+
     const paymentPayload: Record<string, unknown> = {
         x402Version: X402_VERSION,
         scheme: SCHEME_EXACT,
         network: network,
         payload: payload,
+        extensions: { "payment-identifier": { info: { id: paymentId } } },
     };
 
     // 3. Retry the ORIGINAL request with the X-PAYMENT header.
