@@ -1,7 +1,7 @@
 {
   "name": "@cryptoapis-io/mcp-x402-pay",
   "mcpName": "io.github.CryptoAPIs-io/mcp-x402-pay",
-  "version": "0.3.0",
+  "version": "0.5.1",
   "description": "MCP server that pays x402-gated HTTP endpoints — one x402_pay tool that fetches, and on a 402 authorizes via the CryptoAPIs buyer service, signs LOCALLY, and retries.",
   "license": "MIT",
   "type": "module",
@@ -26,10 +26,11 @@
     "test": "node -e \"console.log('test: add later')\"",
     "test:x402-pay": "tsx scripts/test-x402-pay.ts",
     "clean": "rimraf dist",
-    "test:x402-pay-families": "tsx scripts/test-x402-pay-families.ts"
+    "test:x402-pay-families": "tsx scripts/test-x402-pay-families.ts",
+    "test:x402-pay-tool": "tsx scripts/test-x402-pay-tool.ts"
   },
   "dependencies": {
-    "@cryptoapis-io/mcp-shared": "^0.3.0",
+    "@cryptoapis-io/mcp-shared": "^0.3.2",
     "@cryptoapis-io/mcp-signer": "^0.4.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "ethers": "^6.13.0",

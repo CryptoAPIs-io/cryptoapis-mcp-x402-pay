@@ -30,6 +30,7 @@ const types = { TransferWithAuthorization: [
     { name: "validAfter", type: "uint256" }, { name: "validBefore", type: "uint256" }, { name: "nonce", type: "bytes32" }] };
 
 let capturedXPayment: string | undefined;
+let capturedAuthorizeBody: { resource?: unknown } | undefined;
 
 /** A local server: /premium (402 then paid) + /x402/buyer/authorize. */
 function startServer(): Promise<{ base: string; close: () => void }> {
@@ -39,6 +40,7 @@ function startServer(): Promise<{ base: string; close: () => void }> {
             req.on("data", (c) => chunks.push(c));
             req.on("end", () => {
                 if (req.url === "/x402/buyer/authorize") {
+                    capturedAuthorizeBody = JSON.parse(Buffer.concat(chunks).toString("utf8"));
                     res.writeHead(200, { "content-type": "application/json" });
                     res.end(JSON.stringify({ authorized: true, scheme: "eip712", signingPayload: { domain, types, primaryType: "TransferWithAuthorization", message } }));
                     return;
@@ -85,7 +87,12 @@ async function main() {
         const v = await verifyAuthorization({ authorization: paymentPayload.payload.authorization, signature: paymentPayload.payload.signature, domain });
         console.log("parseEnvelope → family:", env.family, "scheme:", env.scheme, "| verify valid:", v.valid, "recovered==from:", v.recovered === from);
 
-        const ok = result.paid && env.family === "evm" && env.scheme === "exact" && v.valid && v.recovered === from;
+        // x402 v2 has no resource in PaymentRequirements — the fetched URL must reach /authorize
+        // so the wallet's domain allowlist can be checked.
+        const resourceSent = capturedAuthorizeBody?.resource === `${base}/premium`;
+        console.log("/authorize resource:", capturedAuthorizeBody?.resource, "| matches fetched url:", resourceSent);
+
+        const ok = result.paid && env.family === "evm" && env.scheme === "exact" && v.valid && v.recovered === from && resourceSent;
         if (ok) { console.log("✅ x402_pay E2E: fetched a 402, paid it, and the X-PAYMENT is facilitator-valid"); process.exit(0); }
         console.error("❌ x402_pay E2E failed"); process.exit(1);
     } finally {
