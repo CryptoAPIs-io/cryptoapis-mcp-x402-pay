@@ -1,5 +1,13 @@
 # @cryptoapis-io/mcp-x402-pay
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [3167621]
+  - @cryptoapis-io/mcp-shared@0.4.0
+  - @cryptoapis-io/mcp-signer@0.4.1
+
 ## 0.5.1
 
 ### Patch Changes
