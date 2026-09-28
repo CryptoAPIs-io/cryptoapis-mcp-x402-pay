@@ -4,6 +4,10 @@
   "version": "0.5.3",
   "description": "MCP server that pays x402-gated HTTP endpoints — one x402_pay tool that fetches, and on a 402 authorizes via the CryptoAPIs buyer service, signs LOCALLY, and retries.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CryptoAPIs-io/cryptoapis-mcp-x402-pay.git"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
