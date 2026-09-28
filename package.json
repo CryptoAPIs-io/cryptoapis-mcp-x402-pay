@@ -34,8 +34,8 @@
     "test:x402-pay-tool": "tsx scripts/test-x402-pay-tool.ts"
   },
   "dependencies": {
-    "@cryptoapis-io/mcp-shared": "^0.4.0",
-    "@cryptoapis-io/mcp-signer": "^0.5.0",
+    "@cryptoapis-io/mcp-shared": "0.4.0",
+    "@cryptoapis-io/mcp-signer": "0.5.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "ethers": "^6.13.0",
     "zod": "^3.25.0"
