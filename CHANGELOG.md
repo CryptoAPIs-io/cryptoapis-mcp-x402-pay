@@ -1,5 +1,11 @@
 # @cryptoapis-io/mcp-x402-pay
 
+## 0.5.5
+
+### Patch Changes
+
+- 2bd4926: bitcoin testnet now runs on testnet4: its x402 network id is `bip122:00000000da84f2bafbbc53dee25a72ae` (was the testnet3 id `bip122:000000000933ea01ad0ee984209779ba`).
+
 ## 0.5.4
 
 ### Patch Changes

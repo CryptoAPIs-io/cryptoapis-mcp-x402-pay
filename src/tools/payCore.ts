@@ -33,7 +33,7 @@ export const SUPPORTED_SCHEMES = new Set(["eip712", "svm-transaction"]);
 /** UTXO CAIP-2 → the {blockchain, network} pair mcp-signer's utxo-sign needs. */
 export const UTXO_CAIP2: Record<string, { blockchain: string; network: string }> = {
     "bip122:000000000019d6689c085ae165831e93": { blockchain: "bitcoin", network: "mainnet" },
-    "bip122:000000000933ea01ad0ee984209779ba": { blockchain: "bitcoin", network: "testnet" },
+    "bip122:00000000da84f2bafbbc53dee25a72ae": { blockchain: "bitcoin", network: "testnet" },
     "bip122:12a765e31ffd4059bada1e25190f6e98": { blockchain: "litecoin", network: "mainnet" },
     "bip122:4966625a4b2851d9fdee139e56211a0d": { blockchain: "litecoin", network: "testnet" },
     "bip122:1a91e3dace36e2be3bf030a65679fe82": { blockchain: "dogecoin", network: "mainnet" },
